@@ -37,7 +37,7 @@ BasicStepperDriver dumpStepper(MOTOR_STEPS, dirK, stepK);
 // Serial communication instances
 HardwareSerial HoverSerialR(1);
 HardwareSerial HoverSerialL(2);
-HardwareSerial piSerial(1);
+///////////////////////////////
 
 struct SerialCommand {
     uint16_t start;
@@ -58,6 +58,14 @@ struct SerialFeedback {
     uint16_t checksum;
 };
 
+// feedback structs 
+SerialFeedback NewFeedback ;
+SerialFeedback leftBoardFeedback ;
+SerialFeedback rightBoardFeedback   ;
+
+// speed variables 
+float leftSpeed ;
+float rightSpeed ;
 // ########################## FUNCTION TO PARSE JSON ##########################
 void parsing(const char* json) {
     StaticJsonDocument<256> data;
@@ -140,8 +148,17 @@ void actuator() {
 // ########################## FEEDBACK FUNCTION ##########################
 void feedback() {
     // Read serial feedback from hoverboards
-    Receive(HoverSerialR);
+    // left board feedback
     Receive(HoverSerialL);
+    memcpy(&leftBoardFeedback, &NewFeedback, sizeof(SerialFeedback));
+    leftSpeed = (leftBoardFeedback.speedL_meas + leftBoardFeedback.speedR_meas)/2 ;
+    
+    // right board feedback
+    Receive(HoverSerialR);
+    memcpy(&rightBoardFeedback, &NewFeedback, sizeof(SerialFeedback));
+    rightSpeed = (rightBoardFeedback.speedL_meas + rightBoardFeedback.speedR_meas)/2 ;
+
+
 }
 
 // ########################## METAL GRIPPING FUNCTION ##########################
@@ -168,7 +185,7 @@ void Receive(HardwareSerial &HoverSerial) {
     uint16_t bufStartFrame;
     SerialFeedback NewFeedback;  // Declare NewFeedback as SerialFeedback structure
     
-    if (HoverSerial.available()) {
+    if (HoverSerial.available()) {s
         incomingByte = HoverSerial.read();
         bufStartFrame = ((uint16_t)(incomingByte) << 8) | incomingBytePrev;
     } else return;
@@ -203,7 +220,7 @@ void setup() {
     Serial.begin(115200);
     HoverSerialR.begin(115200, SERIAL_8N1, UART1_TX, UART1_RX);
     HoverSerialL.begin(115200, SERIAL_8N1, UART2_TX, UART2_RX);
-    piSerial.begin(115200, SERIAL_8N1, UART3_TX, UART3_RX);
+    // piSerial.begin(115200, SERIAL_8N1, UART3_TX, UART3_RX);
 
     pinMode(magnetPin, OUTPUT);
 
@@ -216,8 +233,8 @@ void setup() {
 
 // ########################## LOOP FUNCTION ##########################
 void loop() {
-    if (piSerial.available() > 0) {
-        String json = piSerial.readString();
+    if (Serial.available() > 0) {
+        String json = Serial.readString();
         parsing(json.c_str());
         moveMotors();
         actuator();
