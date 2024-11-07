@@ -215,7 +215,10 @@ void feedback() {
 
 // ########################## METAL GRIPPING FUNCTION ##########################
 void metalGripping() {
+    // Control the magnet
     digitalWrite(magnetPin, magnetState ? HIGH : LOW);
+    // Debug output to verify the magnet state
+    SerialBT.print("Magnet State: "); Serial.println(magnetState);
 }
 
 // ########################## COMMAND SEND FUNCTION ##########################
@@ -276,7 +279,7 @@ void setup() {
     // Start the Bluetooth communication for debugging purposes
     SerialBT.begin("ESP32_Bluetooth");  
 
-    pinMode(magnetPin, OUTPUT);
+    pinMode(magnetPin, OUTPUT); // Set the magnet pin as an output
 
     sliderStepper.begin(RPM, MICROSTEPS);
     elevatorStepper.begin(RPM, MICROSTEPS);
