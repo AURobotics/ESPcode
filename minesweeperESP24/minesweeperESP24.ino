@@ -3,9 +3,9 @@
 #include <BasicStepperDriver.h>
 #include <HardwareSerial.h>
 
-#include "BluetoothSerial.h"  // Include BluetoothSerial library for ESP32
+// #include "BluetoothSerial.h"  // Include BluetoothSerial library for ESP32
 
-BluetoothSerial SerialBT;     // Create a BluetoothSerial instance
+// BluetoothSerial SerialBT;     // Create a BluetoothSerial instance
 
 // debugging variables 
 int counter = 0 ; 
@@ -29,6 +29,8 @@ int torqueL = 0;
 String sliderState;
 String elevatorState;
 String dumpState;
+String actuatorData;
+String motionData;
 bool magnetState = false;
 
 // Define step and direction pins for each stepper
@@ -46,8 +48,8 @@ HardwareSerial HoverSerialR(1);     // right hoverboard
 HardwareSerial HoverSerialL(2);     // left hoverboard
 ///////////////////////////////
 
-// struct for serial communication 
-// start frame, torque front, torque back, checksum
+// // struct for serial communication 
+// // start frame, torque front, torque back, checksum
 struct SerialCommand {
     uint16_t start;
     int16_t torqueF;
@@ -55,7 +57,7 @@ struct SerialCommand {
     uint16_t checksum;
 };
 
-// struct for serial communication
+// // struct for serial communication
 // start frame, cmd1, cmd2, speedR_meas, speedL_meas, batVoltage, boardTemp, cmdLed, checksum
 struct SerialFeedback {
     uint16_t start;
@@ -69,7 +71,7 @@ struct SerialFeedback {
     uint16_t checksum;
 };
 
-// feedback structs 
+// // feedback structs 
 SerialFeedback NewFeedback ;        // feedback struct for serial communication
 SerialFeedback Feedback ;           // feedback struct for serial communication where if the checksum is correct, the values are copied to this struct
 SerialFeedback leftBoardFeedback ;  // feedback struct for left hoverboard
@@ -108,6 +110,7 @@ float rightBatteryVoltage ;
 // }
 
 // ########################## FUNCTION TO comma seperated string ##########################
+/*
 void parsing(const char* input) {
     // Convert the input C-string to an Arduino String object for easy manipulation
     String data = String(input);
@@ -136,17 +139,50 @@ void parsing(const char* input) {
     SerialBT.print(" Dump State: "); Serial.print(dumpState);
     SerialBT.print(" Magnet State: "); Serial.println(magnetState);
 }
+*/
 void parsing2(const char* input) {
-    // Convert the input C-string to an Arduino String object for easy manipulation
-    String data = String(input);
+    
+   // Convert the input C-string to an Arduino String object for easy manipulation
+    String receivedData = String(input);
+    // Parse the combined data
+    if (receivedData.startsWith("(") && receivedData.endsWith(")")) {
+      int separatorIndex = receivedData.indexOf('|');
+      if (separatorIndex > 0) {
+        // Extract motion and actuator data
+        String motionData = receivedData.substring(1, separatorIndex - 1);
+        String actuatorData = receivedData.substring(separatorIndex + 2, receivedData.length() - 1);
+      }
+    }
+
 
     // Parse each value separated by commas
-    int firstComma = data.indexOf(','); 
+    int torquefirstComma = motionData.indexOf(','); 
     // int secondComma = data.indexOf(',', firstComma + 1);
     
     // Extract and convert each substring to the correct type
-    torqueR = data.substring(0, firstComma).toInt();
-    torqueL = data.substring(firstComma + 1).toInt();
+    torqueR = motionData.substring(0, torquefirstComma).toInt();
+    torqueL = motionData.substring(torquefirstComma + 1).toInt();
+    
+     int actfirstComma = actuatorData.indexOf(','); 
+     int actsecondComma = actuatorData.indexOf(',', actfirstComma + 1);
+     
+    sliderState = actuatorData.substring(0, actfirstComma).toInt();
+    elevatorState = actuatorData.substring(actfirstComma + 1, actsecondComma).toInt();
+    dumpState = actuatorData.substring(actsecondComma + 1).toInt();
+    Serial.print("Right Torque: ");
+    Serial.println(torqueR);
+    
+    Serial.print("Left Torque: ");
+    Serial.println(torqueL);
+    
+    Serial.print("Slider State: ");
+    Serial.println(sliderState);
+    
+    Serial.print("Elevator State: ");
+    Serial.println(elevatorState);
+    
+    Serial.print("Dump State: ");
+    Serial.println(dumpState);
 }
 
 // ########################## SPEED CONTROL FUNCTION ##########################
@@ -197,7 +233,7 @@ void feedback() {
     memcpy(&rightBoardFeedback, &Feedback, sizeof(SerialFeedback));
     rightSpeed = (rightBoardFeedback.speedL_meas + rightBoardFeedback.speedR_meas)/2 ;
     rightBatteryVoltage = rightBoardFeedback.batVoltage ;
-
+    /*
     // Debug output to verify the feedback values
     SerialBT.print("Left Speed: "); Serial.print(leftSpeed);
     SerialBT.print(" Right Speed: "); Serial.print(rightSpeed);
@@ -209,7 +245,7 @@ void feedback() {
     Serial.print(" Speed Right: "); Serial.print(rightSpeed);
     Serial.print(" Battery Voltage Left: "); Serial.print(leftBatteryVoltage);
     Serial.print(" Battery Voltage Right: "); Serial.println(rightBatteryVoltage);
-
+    */
 
 }
 
@@ -218,10 +254,12 @@ void metalGripping() {
     // Control the magnet
     digitalWrite(magnetPin, magnetState ? HIGH : LOW);
     // Debug output to verify the magnet state
-    SerialBT.print("Magnet State: "); Serial.println(magnetState);
+    //SerialBT.print("Magnet State: ");
+    //Serial.println(magnetState);
 }
 
 // ########################## COMMAND SEND FUNCTION ##########################
+
 void Send(int16_t utorqueF, int16_t utorqueB, HardwareSerial &HoverSerial) {
     SerialCommand Command;
     Command.start = START_FRAME;
@@ -233,6 +271,7 @@ void Send(int16_t utorqueF, int16_t utorqueB, HardwareSerial &HoverSerial) {
 }
 
 // ########################## RECEIVE FUNCTION ##########################
+
 void Receive(HardwareSerial &HoverSerial) {
     static uint8_t idx = 0;
     static byte *p;
@@ -277,7 +316,7 @@ void setup() {
     HoverSerialR.begin(115200, SERIAL_8N1, UART1_TX, UART1_RX);
     HoverSerialL.begin(115200, SERIAL_8N1, UART2_TX, UART2_RX);
     // Start the Bluetooth communication for debugging purposes
-    SerialBT.begin("ESP32_Bluetooth");  
+    //SerialBT.begin("ESP32_Bluetooth");  
 
     pinMode(magnetPin, OUTPUT); // Set the magnet pin as an output
 
@@ -285,11 +324,11 @@ void setup() {
     elevatorStepper.begin(RPM, MICROSTEPS);
     dumpStepper.begin(RPM, MICROSTEPS);
 
-    // Serial.println("Setup complete."); 
+    Serial.println("Setup complete."); 
     delay(1000);
-    SerialBT.println(" I am working from esp ");
+    //SerialBT.println(" I am working from esp ");
 
-    //Serial.setTimeout(80);
+    Serial.setTimeout(80);
 }
 
 // ########################## LOOP FUNCTION ##########################
@@ -307,4 +346,3 @@ void loop() {
     }
 // metal gripping and actuators 
 }
-
