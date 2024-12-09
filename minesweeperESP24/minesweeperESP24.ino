@@ -215,21 +215,18 @@ void actuator() {
     sliderStep = -1;
     elevatorStep = 0;
     disStep = 0;
-  } else {
-    sliderStep = -1;
-    elevatorStep = 0;
-    disStep = 0;
-  }
-
-  if (elevatorState == "up") {
+  } 
+  else if (elevatorState == "up") {
     sliderStep = 0;
     elevatorStep = 1;
     disStep = 0;
-  } else if (elevatorState == "down") {
+  } 
+  else if (elevatorState == "down") {
     sliderStep = 0;
     elevatorStep = -1;
     disStep = 0;
-  } else {
+  } 
+  else {
     sliderStep = 0;
     elevatorStep = 0;
     disStep = 0;
