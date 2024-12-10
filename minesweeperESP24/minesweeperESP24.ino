@@ -197,8 +197,8 @@ void parseMotionData(const char* motionData) {
     int firstComma = data.indexOf(',');
     
     if (firstComma != -1) {
-        int torqueR = data.substring(0, firstComma).toInt();
-        int torqueL = data.substring(firstComma + 1).toInt();
+        torqueR = data.substring(0, firstComma).toInt();
+        ltorqueL = data.substring(firstComma + 1).toInt();
 
         Serial.print("Right Torque: ");
         Serial.println(torqueR);
@@ -270,8 +270,8 @@ void parseCombinedData(const char* input) {
 // ########################## SPEED CONTROL FUNCTION ##########################
 void moveMotors() {
   // Send torque values to HoverSerials
-  Send(-100, 100, HoverSerialR);
-  Send(100, 100, HoverSerialL);
+  Send(-torqueR, torqueR, HoverSerialR);
+  Send(torqueL, torqueL, HoverSerialL);
 }
 
 // ########################## ACTUATOR FUNCTION ##########################
@@ -436,7 +436,7 @@ void loop() {
   // parsing data from pi
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');
-    parsing2(input.c_str());
+    parseMotionData(input.c_str());
   }
   // metal gripping and actuators
 }
