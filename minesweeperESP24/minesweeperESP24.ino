@@ -192,6 +192,80 @@ void parsing2(const char* input) {
     Serial.print("Dump State: ");
     Serial.println(dumpState);
 }
+void parseMotionData(const char* motionData) {
+    String data = String(motionData);
+    int firstComma = data.indexOf(',');
+    
+    if (firstComma != -1) {
+        int torqueR = data.substring(0, firstComma).toInt();
+        int torqueL = data.substring(firstComma + 1).toInt();
+
+        Serial.print("Right Torque: ");
+        Serial.println(torqueR);
+
+        Serial.print("Left Torque: ");
+        Serial.println(torqueL);
+    } else {
+        Serial.println("Invalid motion data format");
+    }
+}
+
+
+void parseActuatorData(const char* actuatorData) {
+    String data = String(actuatorData);
+    int firstComma = data.indexOf(',');
+    int secondComma = data.indexOf(',', firstComma + 1);
+
+    if (firstComma != -1 && secondComma != -1) {
+        String sliderState = data.substring(0, firstComma);
+        String elevatorState = data.substring(firstComma + 1, secondComma);
+        String dumpState = data.substring(secondComma + 1);
+
+        Serial.print("Slider State: ");
+        Serial.println(sliderState);
+
+        Serial.print("Elevator State: ");
+        Serial.println(elevatorState);
+
+        Serial.print("Dump State: ");
+        Serial.println(dumpState);
+    } else {
+        Serial.println("Invalid actuator data format");
+    }
+}
+
+
+
+
+
+void parseCombinedData(const char* input) {
+    String receivedData = String(input);
+    if (receivedData.startsWith("(") && receivedData.endsWith(")")) {
+        int separatorIndex = receivedData.indexOf('|');
+        if (separatorIndex > 0) {
+            String motionData = receivedData.substring(1, separatorIndex); // Extract motion data
+            String actuatorData = receivedData.substring(separatorIndex + 1, receivedData.length() - 1); // Extract actuator data
+
+            // Parse individual parts
+            Serial.println("Parsing motion data...");
+            parseMotionData(motionData.c_str());
+
+            Serial.println("Parsing actuator data...");
+            parseActuatorData(actuatorData.c_str());
+        } else {
+            Serial.println("Invalid combined data format: Missing '|'");
+        }
+    } else {
+        Serial.println("Invalid combined data format: Missing '(' or ')'");
+    }
+}
+
+
+
+
+
+
+
 
 // ########################## SPEED CONTROL FUNCTION ##########################
 void moveMotors() {
