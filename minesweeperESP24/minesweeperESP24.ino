@@ -29,7 +29,7 @@ int torqueL = 0;
 String sliderState;
 String elevatorState;
 String dumpState;
-String actuatorData;
+String command;
 String motionData;
 bool magnetState = false;
 
@@ -47,8 +47,8 @@ BasicStepperDriver dumpStepper(MOTOR_STEPS, dirK, stepK);
 HardwareSerial HoverSerialR(1);  // right hoverboard
 HardwareSerial HoverSerialL(2);  // left hoverboard
 ///////////////////////////////
-
-// // struct for serial communication 
+int d1 = 0, d2 = 0, d3 = 0;
+// // struct for serial communication
 // // start frame, torque front, torque back, checksum
 struct SerialCommand {
   uint16_t start;
@@ -73,11 +73,11 @@ struct SerialFeedback {
 void send();
 void receive();
 
-// // feedback structs 
-SerialFeedback NewFeedback ;        // feedback struct for serial communication
-SerialFeedback Feedback ;           // feedback struct for serial communication where if the checksum is correct, the values are copied to this struct
-SerialFeedback leftBoardFeedback ;  // feedback struct for left hoverboard
-SerialFeedback rightBoardFeedback ; // feedback struct for right hoverboard
+// // feedback structs
+SerialFeedback NewFeedback;         // feedback struct for serial communication
+SerialFeedback Feedback;            // feedback struct for serial communication where if the checksum is correct, the values are copied to this struct
+SerialFeedback leftBoardFeedback;   // feedback struct for left hoverboard
+SerialFeedback rightBoardFeedback;  // feedback struct for right hoverboard
 
 // speed variables to return to pi
 float leftSpeed;
@@ -148,71 +148,74 @@ void parsing(const char* input) {
   Serial.println(magnetState);
 }
 */
-void parsing2(const char* input) {
-    
-   // Convert the input C-string to an Arduino String object for easy manipulation
-    String receivedData = String(input);
-    // Parse the combined data
-    if (receivedData.startsWith("(") && receivedData.endsWith(")")) {
-      int separatorIndex = receivedData.indexOf('|');
-      if (separatorIndex > 0) {
-        // Extract motion and actuator data
-        String motionData = receivedData.substring(1, separatorIndex - 1);
-        String actuatorData = receivedData.substring(separatorIndex + 2, receivedData.length() - 1);
-      }
+/*
+void parsing2(const char *input) {
+
+  // Convert the input C-string to an Arduino String object for easy manipulation
+  String receivedData = String(input);
+  // Parse the combined data
+  if (receivedData.startsWith("(") && receivedData.endsWith(")")) {
+    int separatorIndex = receivedData.indexOf('|');
+    if (separatorIndex > 0) {
+      // Extract motion and actuator data
+      String motionData = receivedData.substring(1, separatorIndex - 1);
+      String actuatorData = receivedData.substring(separatorIndex + 2, receivedData.length() - 1);
     }
+  }
 
 
-    // Parse each value separated by commas
-    int torquefirstComma = motionData.indexOf(','); 
-    // int secondComma = data.indexOf(',', firstComma + 1);
-    
-    // Extract and convert each substring to the correct type
-    torqueR = motionData.substring(0, torquefirstComma).toInt();
-    torqueL = motionData.substring(torquefirstComma + 1).toInt();
-    
-     int actfirstComma = actuatorData.indexOf(','); 
-     int actsecondComma = actuatorData.indexOf(',', actfirstComma + 1);
-     
-    sliderState = actuatorData.substring(0, actfirstComma).toInt();
-    elevatorState = actuatorData.substring(actfirstComma + 1, actsecondComma).toInt();
-    dumpState = actuatorData.substring(actsecondComma + 1).toInt();
+  // Parse each value separated by commas
+  int torquefirstComma = motionData.indexOf(',');
+  // int secondComma = data.indexOf(',', firstComma + 1);
+
+  // Extract and convert each substring to the correct type
+  torqueR = motionData.substring(0, torquefirstComma).toInt();
+  torqueL = motionData.substring(torquefirstComma + 1).toInt();
+
+  int actfirstComma = actuatorData.indexOf(',');
+  int actsecondComma = actuatorData.indexOf(',', actfirstComma + 1);
+
+  sliderState = actuatorData.substring(0, actfirstComma).toInt();
+  elevatorState = actuatorData.substring(actfirstComma + 1, actsecondComma).toInt();
+  dumpState = actuatorData.substring(actsecondComma + 1).toInt();
+  Serial.print("Right Torque: ");
+  Serial.println(torqueR);
+
+  Serial.print("Left Torque: ");
+  Serial.println(torqueL);
+
+  Serial.print("Slider State: ");
+  Serial.println(sliderState);
+
+  Serial.print("Elevator State: ");
+  Serial.println(elevatorState);
+
+  Serial.print("Dump State: ");
+  Serial.println(dumpState);
+}
+*/
+void parseMotionData(const char *motionData) {
+  String data = String(motionData);
+  int firstComma = data.indexOf(',');
+
+  if (firstComma != -1) {
+    torqueR = data.substring(0, firstComma).toInt();
+    torqueL = data.substring(firstComma + 1).toInt();
+
     Serial.print("Right Torque: ");
     Serial.println(torqueR);
-    
+
     Serial.print("Left Torque: ");
     Serial.println(torqueL);
-    
-    Serial.print("Slider State: ");
-    Serial.println(sliderState);
-    
-    Serial.print("Elevator State: ");
-    Serial.println(elevatorState);
-    
-    Serial.print("Dump State: ");
-    Serial.println(dumpState);
-}
-void parseMotionData(const char* motionData) {
-    String data = String(motionData);
-    int firstComma = data.indexOf(',');
-    
-    if (firstComma != -1) {
-        torqueR = data.substring(0, firstComma).toInt();
-        ltorqueL = data.substring(firstComma + 1).toInt();
-
-        Serial.print("Right Torque: ");
-        Serial.println(torqueR);
-
-        Serial.print("Left Torque: ");
-        Serial.println(torqueL);
-    } else {
-        Serial.println("Invalid motion data format");
-    }
+  } else {
+    Serial.println("Invalid motion data format");
+  }
 }
 
-
-void parseActuatorData(const char* actuatorData) {
-    String data = String(actuatorData);
+void parseActuatorData(const char *actuatorData) {
+  command = String(actuatorData);
+  Serial.println(command);
+  /*
     int firstComma = data.indexOf(',');
     int secondComma = data.indexOf(',', firstComma + 1);
 
@@ -232,35 +235,69 @@ void parseActuatorData(const char* actuatorData) {
     } else {
         Serial.println("Invalid actuator data format");
     }
+    */
 }
 
 
 
 
 
-void parseCombinedData(const char* input) {
-    String receivedData = String(input);
-    if (receivedData.startsWith("(") && receivedData.endsWith(")")) {
-        int separatorIndex = receivedData.indexOf('|');
-        if (separatorIndex > 0) {
-            String motionData = receivedData.substring(1, separatorIndex); // Extract motion data
-            String actuatorData = receivedData.substring(separatorIndex + 1, receivedData.length() - 1); // Extract actuator data
+void parseCombinedData(const char *input) {
+  String receivedData = String(input);
+  if (receivedData.startsWith("(") && receivedData.endsWith(")")) {
+    int separatorIndex = receivedData.indexOf('|');
+    if (separatorIndex > 0) {
+      String motionData = receivedData.substring(1, separatorIndex);                                // Extract motion data
+      String actuatorData = receivedData.substring(separatorIndex + 1, receivedData.length() - 1);  // Extract actuator data
 
-            // Parse individual parts
-            Serial.println("Parsing motion data...");
-            parseMotionData(motionData.c_str());
+      // Parse individual parts
+      Serial.println("Parsing motion data...");
+      parseMotionData(motionData.c_str());
 
-            Serial.println("Parsing actuator data...");
-            parseActuatorData(actuatorData.c_str());
-        } else {
-            Serial.println("Invalid combined data format: Missing '|'");
-        }
+      Serial.println("Parsing actuator data...");
+      parseActuatorData(actuatorData.c_str());
     } else {
-        Serial.println("Invalid combined data format: Missing '(' or ')'");
+      Serial.println("Invalid combined data format: Missing '|'");
     }
+  } else {
+    Serial.println("Invalid combined data format: Missing '(' or ')'");
+  }
 }
 
 
+void actuator2() {
+  if (command == "10000") {
+    d1 = 0;
+    d2 = 1;
+    d3 = 0;
+    Serial.println("Slider Left");
+  } else if (command == "01000") {
+    d1 = 0;
+    d2 = -1;
+    d3 = 0;
+    Serial.println("Slider Right");
+  } else if (command == "00100") {
+    d1 = 1;
+    d2 = 0;
+    d3 = 0;
+    Serial.println("Elevator Up");
+  } else if (command == "00010") {
+    d1 = -1;
+    d2 = 0;
+    d3 = 0;
+    Serial.println("Elevator down");
+  }
+  else
+  {
+    d1 = 0;
+    d2 = 0;
+    d3 = 0;
+    Serial.println("Nothing is pressed");
+  }
+    //dampStepper.move(d3*MOTOR_STEPS*MICROSTEPS);
+    elevatorStepper.move(d2*MOTOR_STEPS*MICROSTEPS);
+    sliderStepper.move(d1*MOTOR_STEPS*MICROSTEPS);
+}
 
 
 
@@ -289,18 +326,15 @@ void actuator() {
     sliderStep = -1;
     elevatorStep = 0;
     disStep = 0;
-  } 
-  else if (elevatorState == "up") {
+  } else if (elevatorState == "up") {
     sliderStep = 0;
     elevatorStep = 1;
     disStep = 0;
-  } 
-  else if (elevatorState == "down") {
+  } else if (elevatorState == "down") {
     sliderStep = 0;
     elevatorStep = -1;
     disStep = 0;
-  } 
-  else {
+  } else {
     sliderStep = 0;
     elevatorStep = 0;
     disStep = 0;
@@ -317,19 +351,19 @@ void actuator() {
 }
 // ########################## FEEDBACK FUNCTION ##########################
 void feedback() {
-    // Read serial feedback from hoverboards
-    // left board feedback
-    Receive(HoverSerialL);
-    memcpy(&leftBoardFeedback, &Feedback, sizeof(SerialFeedback));
-    leftSpeed = (leftBoardFeedback.speedL_meas + leftBoardFeedback.speedR_meas)/2 ;
-    leftBatteryVoltage = leftBoardFeedback.batVoltage ;
-    
-    // right board feedback
-    Receive(HoverSerialR);
-    memcpy(&rightBoardFeedback, &Feedback, sizeof(SerialFeedback));
-    rightSpeed = (rightBoardFeedback.speedL_meas + rightBoardFeedback.speedR_meas)/2 ;
-    rightBatteryVoltage = rightBoardFeedback.batVoltage ;
-    /*
+  // Read serial feedback from hoverboards
+  // left board feedback
+  Receive(HoverSerialL);
+  memcpy(&leftBoardFeedback, &Feedback, sizeof(SerialFeedback));
+  leftSpeed = (leftBoardFeedback.speedL_meas + leftBoardFeedback.speedR_meas) / 2;
+  leftBatteryVoltage = leftBoardFeedback.batVoltage;
+
+  // right board feedback
+  Receive(HoverSerialR);
+  memcpy(&rightBoardFeedback, &Feedback, sizeof(SerialFeedback));
+  rightSpeed = (rightBoardFeedback.speedL_meas + rightBoardFeedback.speedR_meas) / 2;
+  rightBatteryVoltage = rightBoardFeedback.batVoltage;
+  /*
     // Debug output to verify the feedback values
     SerialBT.print("Left Speed: "); Serial.print(leftSpeed);
     SerialBT.print(" Right Speed: "); Serial.print(rightSpeed);
@@ -342,16 +376,15 @@ void feedback() {
     Serial.print(" Battery Voltage Left: "); Serial.print(leftBatteryVoltage);
     Serial.print(" Battery Voltage Right: "); Serial.println(rightBatteryVoltage);
     */
-
 }
 
 // ########################## METAL GRIPPING FUNCTION ##########################
 void metalGripping() {
-    // Control the magnet
-    digitalWrite(magnetPin, magnetState ? HIGH : LOW);
-    // Debug output to verify the magnet state
-    //SerialBT.print("Magnet State: ");
-    //Serial.println(magnetState);
+  // Control the magnet
+  digitalWrite(magnetPin, magnetState ? HIGH : LOW);
+  // Debug output to verify the magnet state
+  //SerialBT.print("Magnet State: ");
+  //Serial.println(magnetState);
 }
 
 // ########################## COMMAND SEND FUNCTION ##########################
@@ -404,13 +437,13 @@ void Receive(HardwareSerial &HoverSerial) {
 
 // ########################## SETUP FUNCTION ##########################
 void setup() {
-    // Start the serial communication with PI
-    Serial.begin(115200);               
-    // Start the serial communication with Hoverboards
-    HoverSerialR.begin(115200, SERIAL_8N1, UART1_TX, UART1_RX);
-    HoverSerialL.begin(115200, SERIAL_8N1, UART2_TX, UART2_RX);
-    // Start the Bluetooth communication for debugging purposes
-    //SerialBT.begin("ESP32_Bluetooth");  
+  // Start the serial communication with PI
+  Serial.begin(115200);
+  // Start the serial communication with Hoverboards
+  HoverSerialR.begin(115200, SERIAL_8N1, UART1_TX, UART1_RX);
+  HoverSerialL.begin(115200, SERIAL_8N1, UART2_TX, UART2_RX);
+  // Start the Bluetooth communication for debugging purposes
+  //SerialBT.begin("ESP32_Bluetooth");
 
   pinMode(magnetPin, OUTPUT);  // Set the magnet pin as an output
 
@@ -418,11 +451,11 @@ void setup() {
   elevatorStepper.begin(RPM, MICROSTEPS);
   dumpStepper.begin(RPM, MICROSTEPS);
 
-    Serial.println("Setup complete."); 
-    delay(1000);
-    //SerialBT.println(" I am working from esp ");
+  Serial.println("Setup complete.");
+  delay(1000);
+  //SerialBT.println(" I am working from esp ");
 
-    Serial.setTimeout(80);
+  Serial.setTimeout(80);
 }
 
 // ########################## LOOP FUNCTION ##########################
@@ -430,13 +463,14 @@ void loop() {
   // sending data to hoverboards and receiving feedback
   if (millis() > t + 100) {
     moveMotors();
+    actuator2();
     feedback();
     t = millis();
   }
   // parsing data from pi
   if (Serial.available() > 0) {
     String input = Serial.readStringUntil('\n');
-    parseMotionData(input.c_str());
+    parseActuatorData(input.c_str());
   }
   // metal gripping and actuators
 }
